@@ -1,0 +1,170 @@
+<div mat-dialog-header>
+  <div class="grey-title">
+    <h2 mat-dialog-title>Manage Signatures</h2>
+    <button mat-icon-button (click)="tryCloseModal()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+</div>
+
+<div mat-dialog-content>
+  <form [formGroup]="signatureForm" (ngSubmit)="onSave()" #form="ngForm" autocomplete="off">
+    <ng-container formArrayName="mandatorySignatures">
+      <table mat-table [dataSource]="mandatorySignatures.controls">
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row; let i = index">{{ i + 1 }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="verified">
+          <th mat-header-cell *matHeaderCellDef>Verified</th>
+          <td mat-cell *matCellDef="let row" [formGroup]="row">
+            <mat-form-field floatLabel="never">
+              <input matInput placeholder="Function" formControlName="verified" required />
+              <mat-error *ngIf="row.controls['verified'].hasError('required')">
+                Verified Role is required
+              </mat-error>
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef>role</th>
+          <td mat-cell *matCellDef="let row" [formGroup]="row">
+            <mat-form-field floatLabel="never">
+              <input matInput placeholder="Role of Signee" formControlName="role" required />
+              <mat-error *ngIf="row.controls['role'].hasError('required')">
+                role is required
+              </mat-error>
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="signature">
+          <th mat-header-cell *matHeaderCellDef>Signature</th>
+          <td mat-cell *matCellDef="let row; let i = index" [formGroup]="row">
+            <mat-form-field floatLabel="never" *ngIf="!row.value.signed">
+              <input
+                matInput
+                required
+                name="signature"
+                type="text"
+                placeholder="Signature"
+                aria-label="Signature input"
+                formControlName="signature"
+                [matAutocomplete]="signatureAutocomplete"
+                data-cy="signature"
+                autocomplete="off"
+              />
+              <button mat-icon-button matSuffix type="button">
+                <mat-icon>person_outline</mat-icon>
+              </button>
+              <mat-error *ngIf="row.controls['signature'].hasError('required')">
+                Signature is required
+              </mat-error>
+              <mat-autocomplete autoActiveFirstOption #signatureAutocomplete="matAutocomplete" [displayWith]="displayWith">
+                <mat-option *ngFor="let user of filteredUsersMandatorySignee[i] | async" [value]="user">
+                  {{ user.name }}
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+            <div *ngIf="row.value.signed">
+              <span>{{ row.value.signature?.name }}</span>
+              <button class="sign" [class.isActive]="!row.value.unsignAllowed">
+                Unsign
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns; let i = index"></tr>
+      </table>
+    </ng-container>
+
+    <div class="additional-signature">
+      Additional Signatures
+    </div>
+
+    <ng-container formArrayName="additionalSignatures">
+      <table mat-table [dataSource]="additionalSignatures.controls">
+        <ng-container matColumnDef="id">
+          <td mat-cell *matCellDef="let row; let i = index" [formGroup]="row">
+            <mat-checkbox (change)="toggleSignature(i)" formControlName="enableSignature"> </mat-checkbox>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="verified">
+          <td mat-cell *matCellDef="let row" [formGroup]="row.controls['signatureControls']">
+            <mat-form-field floatLabel="never">
+              <input matInput placeholder="Function" formControlName="verified" />
+              <mat-error *ngIf="row.controls['signatureControls'].controls['verified'].hasError('required')">
+                Verified Role is required
+              </mat-error>
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="role">
+          <td mat-cell *matCellDef="let row" [formGroup]="row.controls['signatureControls']">
+            <mat-form-field floatLabel="never">
+              <input matInput placeholder="Role of Signee" formControlName="role" />
+              <mat-error *ngIf="row.controls['signatureControls'].controls['role'].hasError('required')">
+                role is required
+              </mat-error>
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="signature">
+          <td mat-cell *matCellDef="let row; let i = index" [formGroup]="row.controls['signatureControls']">
+            <mat-form-field floatLabel="never" *ngIf="!row.controls['signatureControls'].value.signed">
+              <input
+                matInput
+                name="signature"
+                type="text"
+                placeholder="Signature"
+                aria-label="Signature input"
+                formControlName="signature"
+                [matAutocomplete]="signatureAutocomplete"
+                data-cy="signature"
+                autocomplete="off"
+              />
+              <button mat-icon-button matSuffix type="button">
+                <mat-icon>person_outline</mat-icon>
+              </button>
+              <mat-error *ngIf="row.controls['signatureControls'].controls['signature'].hasError('required')">
+                Signature is required
+              </mat-error>
+              <mat-autocomplete autoActiveFirstOption #signatureAutocomplete="matAutocomplete" [displayWith]="displayWith">
+                <mat-option *ngFor="let user of filteredUsersAdditionalSignee[i] | async" [value]="user">
+                  {{ user.name }}
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+            <div *ngIf="row.controls['signatureControls'].value.signed">
+              <span>{{ row.controls['signatureControls'].value.signature?.name }}</span>
+              <button class="sign" [class.isActive]="!row.controls['signatureControls'].value.unsignAllowed">
+                Unsign
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-row *matRowDef="let row; columns: displayedColumns; let i = index"></tr>
+      </table>
+    </ng-container>
+  </form>
+</div>
+
+<div mat-dialog-actions>
+  <div>
+    <app-error-message [errorMessage]="errorMsg" *ngIf="errorMsg"></app-error-message>
+  </div>
+
+  <div>
+    <button mat-raised-button name="Cancel">Cancel</button>
+    <button mat-raised-button color="primary" form="ngForm" type="submit" name="Save">Save</button>
+  </div>
+</div>
+
